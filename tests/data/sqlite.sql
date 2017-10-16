@@ -14,9 +14,15 @@ DROP TABLE IF EXISTS "customer";
 DROP TABLE IF EXISTS "profile";
 DROP TABLE IF EXISTS "type";
 DROP TABLE IF EXISTS "null_values";
+DROP TABLE IF EXISTS "negative_default_values";
 DROP TABLE IF EXISTS "animal";
 DROP TABLE IF EXISTS "default_pk";
+DROP TABLE IF EXISTS "document";
 DROP VIEW IF EXISTS "animal_view";
+DROP TABLE IF EXISTS "T_constraints_4";
+DROP TABLE IF EXISTS "T_constraints_3";
+DROP TABLE IF EXISTS "T_constraints_2";
+DROP TABLE IF EXISTS "T_constraints_1";
 
 CREATE TABLE "profile" (
   id INTEGER NOT NULL,
@@ -87,11 +93,19 @@ CREATE TABLE "composite_fk" (
 );
 
 CREATE TABLE "null_values" (
-  id INTEGER UNSIGNED PRIMARY KEY NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   var1 INTEGER UNSIGNED,
   var2 INTEGER,
   var3 INTEGER DEFAULT NULL,
   stringcol VARCHAR(32) DEFAULT NULL
+);
+
+CREATE TABLE "negative_default_values" (
+  smallint_col integer default '-123',
+  int_col integer default '-123',
+  bigint_col integer default '-123',
+  float_col double default '-12345.6789',
+  numeric_col decimal(5,2) default '-33.22'
 );
 
 CREATE TABLE "type" (
@@ -120,6 +134,14 @@ CREATE TABLE "animal" (
 CREATE TABLE "default_pk" (
   id INTEGER NOT NULL DEFAULT 5,
   type VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE "document" (
+  id INTEGER NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content text,
+  version INTEGER NOT NULL DEFAULT '0',
   PRIMARY KEY (id)
 );
 
@@ -166,6 +188,8 @@ INSERT INTO "order_item_with_null_fk" (order_id, item_id, quantity, subtotal) VA
 INSERT INTO "order_item_with_null_fk" (order_id, item_id, quantity, subtotal) VALUES (2, 3, 1, 8.0);
 INSERT INTO "order_item_with_null_fk" (order_id, item_id, quantity, subtotal) VALUES (3, 2, 1, 40.0);
 
+INSERT INTO "document" (title, content, version) VALUES ('Yii 2.0 guide', 'This is Yii 2.0 guide', 0);
+
 /**
  * (SqLite-)Database Schema for validator tests
  */
@@ -194,3 +218,55 @@ INSERT INTO "validator_ref" (id, a_field, ref) VALUES (3, 'ref_to_3', 3);
 INSERT INTO "validator_ref" (id, a_field, ref) VALUES (4, 'ref_to_4', 4);
 INSERT INTO "validator_ref" (id, a_field, ref) VALUES (5, 'ref_to_4', 4);
 INSERT INTO "validator_ref" (id, a_field, ref) VALUES (6, 'ref_to_5', 5);
+
+/* bit test, see https://github.com/yiisoft/yii2/issues/9006 */
+
+DROP TABLE IF EXISTS "bit_values";
+
+CREATE TABLE "bit_values" (
+  id INTEGER NOT NULL,
+  val BOOLEAN NOT NULL CHECK (val IN (0,1)),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO "bit_values" (id, val) VALUES (1, 0);
+INSERT INTO "bit_values" (id, val) VALUES (2, 1);
+
+CREATE TABLE "T_constraints_1"
+(
+    "C_id" INT NOT NULL PRIMARY KEY,
+    "C_not_null" INT NOT NULL,
+    "C_check" VARCHAR(255) NULL CHECK ("C_check" <> ''),
+    "C_unique" INT NOT NULL,
+    "C_default" INT NOT NULL DEFAULT 0,
+    CONSTRAINT "CN_unique" UNIQUE ("C_unique")
+);
+
+CREATE TABLE "T_constraints_2"
+(
+    "C_id_1" INT NOT NULL,
+    "C_id_2" INT NOT NULL,
+    "C_index_1" INT NULL,
+    "C_index_2_1" INT NULL,
+    "C_index_2_2" INT NULL,
+    CONSTRAINT "CN_pk" PRIMARY KEY ("C_id_1", "C_id_2"),
+    CONSTRAINT "CN_constraints_2_multi" UNIQUE ("C_index_2_1", "C_index_2_2")
+);
+
+CREATE INDEX "CN_constraints_2_single" ON "T_constraints_2" ("C_index_1");
+
+CREATE TABLE "T_constraints_3"
+(
+    "C_id" INT NOT NULL,
+    "C_fk_id_1" INT NOT NULL,
+    "C_fk_id_2" INT NOT NULL,
+    CONSTRAINT "CN_constraints_3" FOREIGN KEY ("C_fk_id_1", "C_fk_id_2") REFERENCES "T_constraints_2" ("C_id_1", "C_id_2") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "T_constraints_4"
+(
+    "C_id" INT NOT NULL PRIMARY KEY,
+    "C_col_1" INT NULL,
+    "C_col_2" INT NOT NULL,
+    CONSTRAINT "CN_constraints_4" UNIQUE ("C_col_1", "C_col_2")
+);
